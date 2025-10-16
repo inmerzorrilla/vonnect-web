@@ -1,0 +1,302 @@
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/vonnect_redesign/app/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Company {
+  id                String            @id @default(cuid())
+  name              String
+  email             String
+  phone             String?
+  website           String?
+  industry          String?
+  size              CompanySize?
+  location          String?
+  description       String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  talentRequests    TalentRequest[]
+  jobPostings       JobPosting[]
+  testimonials      Testimonial[]
+  
+  @@map("companies")
+}
+
+model TalentRequest {
+  id                String            @id @default(cuid())
+  companyId         String
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  jobTitle          String
+  jobDescription    String
+  seniority         SeniorityLevel
+  employmentType    EmploymentType
+  workMode          WorkMode
+  skills            String[]
+  languages         String[]
+  minExperience     Int
+  maxExperience     Int?
+  salaryMin         Int?
+  salaryMax         Int?
+  currency          String            @default("USD")
+  urgency           UrgencyLevel
+  location          String?
+  comments          String?
+  status            RequestStatus     @default(PENDING)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@map("talent_requests")
+}
+
+model Candidate {
+  id                String            @id @default(cuid())
+  firstName         String
+  lastName          String
+  email             String            @unique
+  phone             String?
+  country           String
+  city              String?
+  linkedinUrl       String?
+  githubUrl         String?
+  portfolioUrl      String?
+  specialization    String
+  yearsExperience   Int
+  skills            String[]
+  languages         String[]
+  openToRemote      Boolean           @default(true)
+  currentStatus     EmploymentStatus
+  expectedSalary    Int?
+  currency          String            @default("USD")
+  cvPath            String?
+  bio               String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  applications      JobApplication[]
+  
+  @@map("candidates")
+}
+
+model JobPosting {
+  id                String            @id @default(cuid())
+  companyId         String
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title             String
+  description       String
+  requirements      String
+  responsibilities  String
+  seniority         SeniorityLevel
+  employmentType    EmploymentType
+  workMode          WorkMode
+  location          String?
+  salaryMin         Int?
+  salaryMax         Int?
+  currency          String            @default("USD")
+  skills            String[]
+  languages         String[]
+  benefits          String[]
+  isActive          Boolean           @default(true)
+  featuredUntil     DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  applications      JobApplication[]
+  
+  @@map("job_postings")
+}
+
+model JobApplication {
+  id                String            @id @default(cuid())
+  candidateId       String
+  candidate         Candidate         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  jobPostingId      String
+  jobPosting        JobPosting        @relation(fields: [jobPostingId], references: [id], onDelete: Cascade)
+  coverLetter       String?
+  status            ApplicationStatus @default(PENDING)
+  appliedAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@unique([candidateId, jobPostingId])
+  @@map("job_applications")
+}
+
+model ContactSubmission {
+  id                String            @id @default(cuid())
+  name              String
+  email             String
+  phone             String?
+  company           String?
+  subject           String
+  message           String
+  type              ContactType       @default(GENERAL)
+  status            SubmissionStatus  @default(NEW)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@map("contact_submissions")
+}
+
+model Testimonial {
+  id                String            @id @default(cuid())
+  name              String
+  role              String
+  companyId         String?
+  company           Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  companyName       String?
+  content           String
+  rating            Int               @default(5)
+  isActive          Boolean           @default(true)
+  avatarUrl         String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@map("testimonials")
+}
+
+model BlogPost {
+  id                String            @id @default(cuid())
+  title             String
+  slug              String            @unique
+  excerpt           String
+  content           String
+  coverImageUrl     String?
+  category          BlogCategory
+  tags              String[]
+  isPublished       Boolean           @default(false)
+  publishedAt       DateTime?
+  readTimeMinutes   Int               @default(5)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@map("blog_posts")
+}
+
+model SalaryData {
+  id                String            @id @default(cuid())
+  jobTitle          String
+  level             SeniorityLevel
+  location          String
+  country           String
+  minSalary         Int
+  maxSalary         Int
+  avgSalary         Int
+  currency          String            @default("USD")
+  skills            String[]
+  updatedAt         DateTime          @updatedAt
+  
+  @@map("salary_data")
+}
+
+model NewsletterSubscriber {
+  id                String            @id @default(cuid())
+  email             String            @unique
+  firstName         String?
+  isActive          Boolean           @default(true)
+  preferences       String[]
+  subscribedAt      DateTime          @default(now())
+  unsubscribedAt    DateTime?
+  
+  @@map("newsletter_subscribers")
+}
+
+enum CompanySize {
+  STARTUP
+  SMALL
+  MEDIUM
+  LARGE
+  ENTERPRISE
+}
+
+enum SeniorityLevel {
+  INTERN
+  JUNIOR
+  MID
+  SENIOR
+  LEAD
+  PRINCIPAL
+  DIRECTOR
+  VP
+  C_LEVEL
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  FREELANCE
+  INTERNSHIP
+  TEMPORARY
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ON_SITE
+}
+
+enum UrgencyLevel {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum EmploymentStatus {
+  ACTIVELY_LOOKING
+  OPEN_TO_OPPORTUNITIES
+  NOT_LOOKING
+  EMPLOYED
+  FREELANCING
+  UNEMPLOYED
+}
+
+enum RequestStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  INTERVIEWING
+  OFFERED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum ContactType {
+  GENERAL
+  TALENT_REQUEST
+  PARTNERSHIP
+  SUPPORT
+  MEDIA
+}
+
+enum SubmissionStatus {
+  NEW
+  CONTACTED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum BlogCategory {
+  TIPS
+  INDUSTRY_NEWS
+  CAREER_ADVICE
+  TECH_TRENDS
+  RECRUITMENT_INSIGHTS
+  COMPANY_CULTURE
+}
